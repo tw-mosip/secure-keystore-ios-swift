@@ -177,12 +177,24 @@ class KeychainManagerImpl: KeychainManagerProtocol {
     
     func clearKeys(completion: @escaping (Bool) -> Void) {
         keychainQueue.async {
-            let query: [String: Any] = [
-                kSecClass as String: [kSecClassGenericPassword, kSecClassKey]
-            ]
+            var success = true
             
-            let status = SecItemDelete(query as CFDictionary)
-            completion(status == errSecSuccess || status == errSecItemNotFound)
+            let classes = [kSecClassGenericPassword, kSecClassKey]
+            
+            for secClass in classes {
+                let query: [String: Any] = [
+                    kSecClass as String: secClass
+                ]
+                
+                let status = SecItemDelete(query as CFDictionary)
+                if status != errSecSuccess && status != errSecItemNotFound {
+                    success = false
+                    break
+                }
+            }
+            
+            completion(success)
         }
+    
     }
 }
