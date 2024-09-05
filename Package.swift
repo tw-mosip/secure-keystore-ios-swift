@@ -20,8 +20,5 @@ let package = Package(
             name: "securekeystore",
             dependencies: [
             ]),
-        .testTarget(
-            name: "securekeystoreTests",
-            dependencies: ["securekeystore"]),
     ]
 )
