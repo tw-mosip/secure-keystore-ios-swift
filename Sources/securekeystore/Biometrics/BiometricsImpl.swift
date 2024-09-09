@@ -34,13 +34,10 @@ class BiometricsImpl: BiometricsProtocol {
     private func performAuthentication(reason: String, completion: @escaping (Bool, Error?) -> Void) {
         // Ensure that only one authentication is happening at a time
         while isAuthenticating {
-            
             Thread.sleep(forTimeInterval: 0.1)
         }
         
         isAuthenticating = true
-        
-        
         guard isAuthenticationRequired() else {
             DispatchQueue.main.async {
                 completion(true, nil)
@@ -48,34 +45,44 @@ class BiometricsImpl: BiometricsProtocol {
             isAuthenticating = false
             return
         }
-        
+
         let context = LAContext()
         var error: NSError?
-        
-        
+
         if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
             context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authError in
                 DispatchQueue.main.async {
                     if success {
                         self.updateLastSuccessfulAuth()
+                        self.isAuthenticating = false
+                        completion(true, nil)
+                    } else if let authError = authError as! LAError?, authError.code == LAError.userFallback {
+                        // Biometry is locked out after several failed attempts, fallback to password
+                        self.fallbackToPassword(context: context, reason: reason, completion: completion)
+                    } else {
+                        self.isAuthenticating = false
+                        completion(false, authError)
                     }
-                    self.isAuthenticating = false
-                    completion(success, authError)
                 }
             }
         } else {
-          
-            context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
-                DispatchQueue.main.async {
-                    if success {
-                        self.updateLastSuccessfulAuth()
-                    }
-                    self.isAuthenticating = false
-                    completion(success, authError)
+            // Fallback to device password if biometrics are not available or disabled
+            fallbackToPassword(context: context, reason: reason, completion: completion)
+        }
+    }
+
+    private func fallbackToPassword(context: LAContext, reason: String, completion: @escaping (Bool, Error?) -> Void) {
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
+            DispatchQueue.main.async {
+                if success {
+                    self.updateLastSuccessfulAuth()
                 }
+                self.isAuthenticating = false
+                completion(success, authError)
             }
         }
     }
+
     
     // Method to check if biometrics are enabled
     func hasBiometricsEnabled() -> Bool {
