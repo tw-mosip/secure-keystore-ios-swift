@@ -1,0 +1,15 @@
+{
+  "originHash" : "0bdb4322316918054180289b9fc3a11a650bc6802a031aa3f4f558635a9c2756",
+  "pins" : [
+    {
+      "identity" : "secure-keystore-ios-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tw-mosip/secure-keystore-ios-swift",
+      "state" : {
+        "branch" : "inji-1578",
+        "revision" : "6aff7a88789daeb8622321b73e870c36f27f0016"
+      }
+    }
+  ],
+  "version" : 3
+}
