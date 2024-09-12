@@ -8,7 +8,7 @@ class BiometricsImpl: BiometricsProtocol {
     private static var popupDescription: String = ""
 
     
-    private let authOffsetInSeconds: TimeInterval = 15
+    private let authOffsetInSeconds: TimeInterval = 300
     
     // Thread-safe storage for last successful authentication time
     private var lastSuccessfulAuthTime: Date?
