@@ -13,7 +13,6 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
     
     public init() {
         self.biometrics=BiometricsImpl()
-        print("keychain reinitialised")
         self.keychainManager = KeychainManagerImpl(biometrics: biometrics)
         self.rsaCryptoManager = RSACryptoManager(keychainManager: keychainManager)
         self.ecr1CryptoManager = ECR1CryptoManager(keychainManager: keychainManager)
@@ -38,6 +37,7 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
             rsaKeyManager.generateKeyPair(tag: tag) { success, privateKey, publicKey in
                 if success {
                     self.keychainManager.storeKey(key: privateKey!, tag: tag) { success in
+                        setAuthTimeOutForKey(keyType: type, authTimeout:isAuthRequired == true ? TimeInterval(authTimeout):TimeInterval(Int.max))
                         onSuccess((publicKey!.toPKCS8PublicKeyString())!)
                     }
                 } else {
@@ -49,6 +49,7 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
             ecr1KeyManager.generateKeyPair(tag: tag) { success, privateKey, publicKey in
                 if success {
                     self.keychainManager.storeKey(key: privateKey!, tag: tag) { success in
+                        setAuthTimeOutForKey(keyType: type, authTimeout:isAuthRequired == true ? TimeInterval(authTimeout):TimeInterval(Int.max))
                         onSuccess((publicKey?.toPKCS8PublicKeyString())!)
                     }
                 } else {
@@ -101,18 +102,20 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
         }
     }
     
-    public func storeGenericKey(publicKey: String, privateKey: String, account: String, onSuccess: @escaping (Bool) -> Void, onFailure: @escaping(_ code: String,_ message: String)->Void)  {
+    public func storeGenericKey(publicKey: String, privateKey: String, account: String, onSuccess: @escaping (Bool) -> Void, onFailure: @escaping (_ code: String, _ message: String) -> Void) {
         let keyPair = ["privateKey": privateKey, "publicKey": publicKey]
-        do{
+        let signingKeysWithTimeOut: [String] = ["ES256K", "ED25519", "RS256", "ES256"]
+        
+        do {
             let serializedKeyPair = try NSKeyedArchiver.archivedData(withRootObject: keyPair, requiringSecureCoding: false)
-            keychainManager.storeGenericKey(data: serializedKeyPair, account: account){
-                success in success == true ? onSuccess(true):onFailure("", "Key storing error")
+            keychainManager.storeGenericKey(data: serializedKeyPair, account: account) { success in
+                let timeout: TimeInterval = signingKeysWithTimeOut.contains(account) ? TimeInterval(0) : TimeInterval(-1)
+                setAuthTimeOutForKey(keyType: account, authTimeout: timeout)
+                success ? onSuccess(true) : onFailure("STORE_ERROR", "Key storing failed")
             }
-        }
-        catch{
+        } catch {
             onFailure("SERIALIZATION_ERROR", "Failed to serialize key pair")
         }
-        
     }
     
     public func retrieveGenericKey(account: String, onSuccess: @escaping (String?,String?) -> Void, onFailure: @escaping(_ code: String,_ message: String)->Void) {
@@ -153,6 +156,7 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
                 // If the key does not exist, generate a new one
                 self.aesKeyManager.generateKeyPair(tag: alias) { success, privateKey, publicKey in
                     if success {
+                        setAuthTimeOutForKey(keyType: alias, authTimeout:authRequired == true ? TimeInterval(authTimeout):TimeInterval(-1))
                         // Store the new key in the keychain
                         self.keychainManager.storeKey(key: privateKey!, tag: alias) { storeSuccess in
                             storeSuccess ? onSuccess(true) : onFailure("KEY_STORE_ERROR", "Failed to store AES key")
@@ -197,6 +201,7 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
             }
             else{
                 let data=key?.withUnsafeBytes { Data($0) }
+                setAuthTimeOutForKey(keyType: alias, authTimeout:TimeInterval(-1))
                 self.keychainManager.storeGenericKey(data:data , account: alias){
                     success in
                     if(success){

@@ -5,13 +5,13 @@ class KeychainManagerImpl: KeychainManagerProtocol {
     
     private let biometrics: BiometricsProtocol
     private let keychainQueue = DispatchQueue(label: "keychainQueue")
-
+    
     init(biometrics: BiometricsProtocol) {
         self.biometrics = biometrics
     }
     
-    private func authenticateUser(completion: @escaping (Bool) -> Void) {
-        biometrics.authenticateUser(reason: "Authenticate to access your keys") { success, error in
+    private func authenticateUser(keyType:String, completion: @escaping (Bool) -> Void) {
+        biometrics.authenticateUser(keyType:keyType,reason: "Authenticate to access your keys") { success, error in
             if let error = error {
                 print("Biometric authentication failed: \(error.localizedDescription)")
             }
@@ -21,23 +21,18 @@ class KeychainManagerImpl: KeychainManagerProtocol {
     
     func storeKey(key: SecKey, tag: String, completion: @escaping (Bool) -> Void) {
         keychainQueue.async {
-            self.authenticateUser { success in
-                guard success else {
-                    completion(false)
-                    return
-                }
-
-                let query: [String: Any] = [
-                    kSecClass as String: kSecClassKey,
-                    kSecAttrLabel as String: tag+"label",
-                    kSecAttrApplicationTag as String: tag,
-                    kSecValueRef as String: key
-                ]
-                
-                let status = SecItemAdd(query as NSDictionary, nil)
-                completion(status == errSecSuccess)
-            }
+            
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassKey,
+                kSecAttrLabel as String: tag+"label",
+                kSecAttrApplicationTag as String: tag,
+                kSecValueRef as String: key
+            ]
+            
+            let status = SecItemAdd(query as NSDictionary, nil)
+            completion(status == errSecSuccess)
         }
+        
     }
     func dumpAllSecKeys() {
         let query: [String: Any] = [
@@ -56,7 +51,7 @@ class KeychainManagerImpl: KeychainManagerProtocol {
     
     func retrieveKey(tag: String, completion: @escaping (SecKey?) -> Void) {
         keychainQueue.async {
-            self.authenticateUser { success in
+            self.authenticateUser(keyType:tag) { success in
                 guard success else {
                     completion(nil)
                     return
@@ -85,7 +80,7 @@ class KeychainManagerImpl: KeychainManagerProtocol {
     
     func deleteKey(tag: String, completion: @escaping (Bool) -> Void) {
         keychainQueue.async {
-            self.authenticateUser { success in
+            self.authenticateUser(keyType:tag) { success in
                 guard success else {
                     completion(false)
                     return
@@ -104,31 +99,26 @@ class KeychainManagerImpl: KeychainManagerProtocol {
     
     func storeGenericKey(data: Data?, account: String, completion: @escaping (Bool) -> Void) {
         keychainQueue.async {
-            self.authenticateUser { success in
-                guard success, let data = data else {
-                    completion(false)
-                    return
-                }
-                
-                let query: [String: Any] = [
-                    kSecClass as String: kSecClassGenericPassword,
-                    kSecAttrAccount as String: account,
-                    kSecValueData as String: data,
-                    kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-                ]
-                
-                // Remove any existing item with the same account
-                SecItemDelete(query as CFDictionary)
-                
-                let status = SecItemAdd(query as CFDictionary, nil)
-                completion(status == errSecSuccess)
-            }
+            
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrAccount as String: account,
+                kSecValueData as String: data,
+                kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            ]
+            
+            // Remove any existing item with the same account
+            SecItemDelete(query as CFDictionary)
+            
+            let status = SecItemAdd(query as CFDictionary, nil)
+            completion(status == errSecSuccess)
+            
         }
     }
     
     func retrieveGenericKey(account: String, completion: @escaping (Data?) -> Void) {
         keychainQueue.async {
-            self.authenticateUser { success in
+            self.authenticateUser(keyType:account) { success in
                 guard success else {
                     completion(nil)
                     return
@@ -155,25 +145,27 @@ class KeychainManagerImpl: KeychainManagerProtocol {
     
     func keyExists(tag: String, completion: @escaping (Bool) -> Void) {
         keychainQueue.async {
-            self.authenticateUser { success in
-                guard success else {
-                    completion(false)
-                    return
-                }
-                
-                let query: [String: Any] = [
-                    kSecClass as String: kSecClassKey,
-                    kSecAttrApplicationTag as String: tag,
-                    kSecMatchLimit as String: kSecMatchLimitOne,
-                    kSecReturnAttributes as String: kCFBooleanTrue!
-                ]
-                
-                var item: CFTypeRef?
-                let status = SecItemCopyMatching(query as CFDictionary, &item)
-                completion(status == errSecSuccess)
-            }
+            let queryEnclaveKeys: [String: Any] = [
+                kSecClass as String: kSecClassKey,
+                kSecAttrApplicationTag as String: tag,
+                kSecMatchLimit as String: kSecMatchLimitOne,
+                kSecReturnAttributes as String: kCFBooleanTrue!
+            ]
+            
+            let queryGenericKey: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrAccount as String: tag,
+                kSecReturnData as String: kCFBooleanTrue!,
+                kSecMatchLimit as String: kSecMatchLimitOne
+            ]
+            
+            var item: CFTypeRef?
+            let statusForEnclaveKeys = SecItemCopyMatching(queryEnclaveKeys as CFDictionary, &item)
+            let statusForGenericKeys = SecItemCopyMatching(queryGenericKey as CFDictionary, &item)
+            completion(statusForEnclaveKeys == errSecSuccess || statusForGenericKeys == errSecSuccess)
         }
     }
+    
     
     func clearKeys(completion: @escaping (Bool) -> Void) {
         keychainQueue.async {
@@ -195,6 +187,6 @@ class KeychainManagerImpl: KeychainManagerProtocol {
             
             completion(success)
         }
-    
+        
     }
 }

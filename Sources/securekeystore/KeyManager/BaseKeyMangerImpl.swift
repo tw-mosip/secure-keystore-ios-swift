@@ -82,7 +82,7 @@ class BaseKeyManagerImpl: KeyManagerProtocol {  // make file name basekeymanager
     }
     
      func  authenticateUser(completion: @escaping (Bool) -> Void) {
-        biometricManager.authenticateUser(reason: "Authenticate to access your keys") { success, error in
+         biometricManager.authenticateUser(keyType:"",reason: "Authenticate to access your keys") { success, error in
             if let error = error {
                 print("Biometric authentication failed: \(error.localizedDescription)")
             }
