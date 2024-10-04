@@ -13,16 +13,8 @@ class HMACKeyManager: BaseKeyManagerImpl {
     
     @available(iOS 13.0, *)
     func generateHmacshaKey(tag:String, completion:@escaping(Bool, SymmetricKey?)->Void){
-        authenticateUser { success in
-             if(!success)  {
-                completion(false, nil)
-                return
-            }
-            
-            
             let hmacKey=SymmetricKey(size: .bits256)
             completion(true,hmacKey)
         }
         
     }
-}
