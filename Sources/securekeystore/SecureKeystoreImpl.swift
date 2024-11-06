@@ -62,8 +62,12 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
     }
     
     public func deleteKeyPair(tag: String, onSuccess: @escaping (Bool) -> Void, onFailure: @escaping(_ code: String,_ message: String)->Void) {
-        keychainManager.deleteKey(tag: tag) { success in
-            success == true ? onSuccess(success) : onFailure("","Key pair deleteion error")
+        keychainManager.deleteKey(tag: tag) { resultMessage in
+            if resultMessage == "Key deleted successfully" {
+                onSuccess(true)
+            } else {
+                onFailure("", resultMessage)
+            }
         }
     }
     
@@ -96,9 +100,9 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
         
     }
     
-   public func retrieveKey(tag: String, onSuccess: @escaping (String) -> Void, onFailure: @escaping(_ code: String,_ message: String)->Void){
-        keychainManager.retrieveKey(tag: tag){
-            key in key != nil ? onSuccess(key!.toPKCS8PublicKeyString()!):onFailure("","Key retrieval error")
+    public func retrieveKey(tag: String, onSuccess: @escaping (String) -> Void, onFailure: @escaping(_ code: String,_ message: String)->Void){
+        keychainManager.retrieveKey(tag: tag){ key, resultMessage in
+            key != nil ? onSuccess(key!.toPKCS8PublicKeyString()!) : onFailure("", resultMessage)
         }
     }
     
@@ -119,7 +123,7 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
     }
     
     public func retrieveGenericKey(account: String, onSuccess: @escaping (String?,String?) -> Void, onFailure: @escaping(_ code: String,_ message: String)->Void) {
-        keychainManager.retrieveGenericKey(account: account) { data in
+        keychainManager.retrieveGenericKey(account: account) { data, resultMessage in
             if let data = data {
                 do {
                     if let keyPair = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? [String: String?],
@@ -133,7 +137,8 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
                     onFailure("DESERIALIZATION_ERROR", "Failed to deserialize key pair")
                 }
             } else {
-                onFailure("", "Key retrieving error")
+                let errorMessage = (resultMessage?.isEmpty == true) ? "Key retrieving error" : resultMessage!
+                onFailure("", errorMessage)
             }
         }
     }

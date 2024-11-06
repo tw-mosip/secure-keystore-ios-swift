@@ -10,12 +10,13 @@ class KeychainManagerImpl: KeychainManagerProtocol {
         self.biometrics = biometrics
     }
     
-    private func authenticateUser(keyType:String, completion: @escaping (Bool) -> Void) {
+    private func authenticateUser(keyType:String, completion: @escaping (BiometricAuthentication) -> Void) {
         biometrics.authenticateUser(keyType:keyType,reason: "Authenticate to access your keys") { success, error in
             if let error = error {
-                print("Biometric authentication failed: \(error.localizedDescription)")
+                completion(BiometricAuthentication.failed)
+            } else {
+                completion(BiometricAuthentication.success)
             }
-            completion(success)
         }
     }
     
@@ -49,18 +50,19 @@ class KeychainManagerImpl: KeychainManagerProtocol {
         }
     }
     
-    func retrieveKey(tag: String, completion: @escaping (SecKey?) -> Void) {
+    func retrieveKey(tag: String, completion: @escaping (SecKey?, String) -> Void) {
         keychainQueue.async {
-            self.authenticateUser(keyType:tag) { success in
-                guard success else {
-                    completion(nil)
+            self.authenticateUser(keyType: tag) { result in
+                guard result.status else {
+                    completion(nil, result.statusMessage)
                     return
                 }
+                
                 self.dumpAllSecKeys()
                 let query: [String: Any] = [
                     kSecClass as String: kSecClassKey,
                     kSecAttrApplicationTag as String: tag,
-                    kSecAttrLabel as String: tag+"label",
+                    kSecAttrLabel as String: tag + "label",
                     kSecReturnRef as String: true,
                     kSecMatchLimit as String: kSecMatchLimitOne
                 ]
@@ -69,20 +71,21 @@ class KeychainManagerImpl: KeychainManagerProtocol {
                 let status = SecItemCopyMatching(query as NSDictionary, &item)
                 
                 guard status == errSecSuccess else {
-                    completion(nil)
+                    completion(nil, "Failed to retrieve key")
                     return
                 }
                 let key = item as! SecKey
-                completion(key)
+                completion(key, result.statusMessage)
             }
         }
     }
     
-    func deleteKey(tag: String, completion: @escaping (Bool) -> Void) {
+    
+    func deleteKey(tag: String, completion: @escaping (String) -> Void) {
         keychainQueue.async {
-            self.authenticateUser(keyType:tag) { success in
-                guard success else {
-                    completion(false)
+            self.authenticateUser(keyType:tag) { result in
+                guard result.status else {
+                    completion(result.statusMessage)
                     return
                 }
                 
@@ -92,7 +95,9 @@ class KeychainManagerImpl: KeychainManagerProtocol {
                 ]
                 
                 let status = SecItemDelete(query as CFDictionary)
-                completion(status == errSecSuccess)
+                if status == errSecSuccess {
+                    completion("Key deleted successfully")
+                }
             }
         }
     }
@@ -116,11 +121,11 @@ class KeychainManagerImpl: KeychainManagerProtocol {
         }
     }
     
-    func retrieveGenericKey(account: String, completion: @escaping (Data?) -> Void) {
+    func retrieveGenericKey(account: String, completion: @escaping (Data?, String?) -> Void) {
         keychainQueue.async {
-            self.authenticateUser(keyType:account) { success in
-                guard success else {
-                    completion(nil)
+            self.authenticateUser(keyType:account) { result in
+                guard result.status else {
+                    completion(nil, result.statusMessage)
                     return
                 }
                 
@@ -135,10 +140,10 @@ class KeychainManagerImpl: KeychainManagerProtocol {
                 let status = SecItemCopyMatching(query as CFDictionary, &item)
                 
                 guard status == errSecSuccess, let data = item as? Data else {
-                    completion(nil)
+                    completion(nil,"")
                     return
                 }
-                completion(data)
+                completion(data,"")
             }
         }
     }

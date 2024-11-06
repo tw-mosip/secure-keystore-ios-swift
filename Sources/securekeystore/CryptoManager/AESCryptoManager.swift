@@ -3,7 +3,7 @@ import Foundation
 class AESCryptoManager:BaseCryptoManagerImpl{
     
     func encrypt(keyTag:String,data: String, completion: @escaping (String?)->Void){
-        fetchPrivateKeyRef(tag: keyTag) { success, privateKey in
+        fetchPrivateKeyRef(tag: keyTag) { success, privateKey, _  in
             guard success, let privateKey = privateKey else {
                 completion(nil)
                 return
@@ -26,7 +26,7 @@ class AESCryptoManager:BaseCryptoManagerImpl{
     }
     
     func decrypt(keyTag:String,data: String, completion: @escaping (String?)->Void){
-        fetchPrivateKeyRef(tag: keyTag) { success, privateKey in
+        fetchPrivateKeyRef(tag: keyTag) { success, privateKey, _ in
             guard let privateKey = privateKey else {
                 completion(nil)
                 return
