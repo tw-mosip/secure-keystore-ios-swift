@@ -7,12 +7,12 @@ func getAuthTimeOutForKeyType(keyType: String) -> TimeInterval {
     if !keyAuthTimeouts.isEmpty {
         return keyAuthTimeouts[keyType] ?? -1
     }
-
+    
     
     let semaphore = DispatchSemaphore(value: 0)
     var timeout: TimeInterval = -1
     keyAuthTimeouts["keyAuthMap"]=TimeInterval(-1)
-    KeychainManagerImpl(biometrics: BiometricsImpl()).retrieveGenericKey(account: "keyAuthMap") { data in
+    KeychainManagerImpl(biometrics: BiometricsImpl()).retrieveGenericKey(account: "keyAuthMap") { data, _  in
         let storedData: Data = data ?? "".data(using: .utf8)!
         let storedString: String = String(data: storedData, encoding: .utf8) ?? ""
         
@@ -23,9 +23,9 @@ func getAuthTimeOutForKeyType(keyType: String) -> TimeInterval {
         timeout = keyAuthTimeouts[keyType] ?? -1
         semaphore.signal()
     }
-
+    
     semaphore.wait()
-
+    
     return timeout
 }
 

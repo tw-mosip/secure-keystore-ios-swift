@@ -5,7 +5,7 @@ class ECR1CryptoManager: BaseCryptoManagerImpl {
     
     
     func sign(data: Data, withKeyTag keyTag: String, completion: @escaping (String?) -> Void) {
-        fetchPrivateKeyRef(tag: keyTag) { success, privateKey in
+        fetchPrivateKeyRef(tag: keyTag) { success, privateKey, _ in
             guard success, let privateKey = privateKey else {
                 completion(nil)
                 return

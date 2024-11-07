@@ -5,7 +5,7 @@ import CryptoKit
 class RSACryptoManager: BaseCryptoManagerImpl {
     
     func sign(data: Data, withKeyTag keyTag: String, completion: @escaping (String?) -> Void) {
-        fetchPrivateKeyRef(tag: keyTag) { success, privateKey in
+        fetchPrivateKeyRef(tag: keyTag) { success, privateKey, _ in
             guard success, let privateKey = privateKey else {
                 completion(nil)
                 return
@@ -21,7 +21,7 @@ class RSACryptoManager: BaseCryptoManagerImpl {
         }
         
         func verify(signature: String, originalData: Data, withKeyTag keyTag: String, completion: @escaping (Bool) -> Void) {
-            fetchPrivateKeyRef(tag: keyTag) { success, publicKey in
+            fetchPrivateKeyRef(tag: keyTag) { success, publicKey, _ in
                 guard success, let publicKey = SecKeyCopyPublicKey(publicKey!) else {
                     completion(false)
                     return
