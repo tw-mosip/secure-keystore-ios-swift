@@ -176,23 +176,23 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
     
     public func encryptData(alias:String, data:String, onSuccess: @escaping (String) -> Void, onFailure: @escaping(_ code: String,_ message: String)->Void)
     {
-        aesCryptoManager.encrypt(keyTag: alias, data: data){ text in
-            if let encryptedData = text, encryptedData != BiometricAuthentication.failed.statusMessage {
+        aesCryptoManager.encrypt(keyTag: alias, data: data){ result in
+            if let encryptedData = result, encryptedData != BiometricAuthentication.failed.statusMessage {
                 onSuccess(encryptedData)
             }
             else{
-                onFailure("", "Encryption failed: \(text!)")
+                onFailure("", "Encryption failed: \(result!)")
             }
         }
     }
     
     public func decryptData(alias:String, data:String, onSuccess: @escaping (String) -> Void, onFailure: @escaping(_ code: String,_ message: String)->Void)
     {
-        aesCryptoManager.decrypt(keyTag: alias, data: data){ text in
-            if let decryptedText = text, decryptedText != BiometricAuthentication.failed.statusMessage {
+        aesCryptoManager.decrypt(keyTag: alias, data: data){ result in
+            if let decryptedText = result, decryptedText != BiometricAuthentication.failed.statusMessage {
                 onSuccess(decryptedText)
             } else {
-                onFailure("", "Decryption failed: \(text!)")
+                onFailure("", "Decryption failed: \(result!)")
             }
         }
     }
