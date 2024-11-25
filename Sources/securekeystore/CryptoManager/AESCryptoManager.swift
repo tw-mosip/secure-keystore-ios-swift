@@ -3,9 +3,9 @@ import Foundation
 class AESCryptoManager:BaseCryptoManagerImpl{
     
     func encrypt(keyTag:String,data: String, completion: @escaping (String?)->Void){
-        fetchPrivateKeyRef(tag: keyTag) { success, privateKey, _  in
+        fetchPrivateKeyRef(tag: keyTag) { success, privateKey, resultMessage  in
             guard success, let privateKey = privateKey else {
-                completion(nil)
+                completion(resultMessage)
                 return
             }
             
@@ -18,7 +18,7 @@ class AESCryptoManager:BaseCryptoManagerImpl{
                 &error
             ) else {
                 print("Error encrypting data: \(error!.takeRetainedValue() as Error)")
-                completion(nil)
+                completion(resultMessage)
                 return
                }
             completion((encryptedData as Data).base64EncodedString())
@@ -26,9 +26,9 @@ class AESCryptoManager:BaseCryptoManagerImpl{
     }
     
     func decrypt(keyTag:String,data: String, completion: @escaping (String?)->Void){
-        fetchPrivateKeyRef(tag: keyTag) { success, privateKey, _ in
+        fetchPrivateKeyRef(tag: keyTag) { success, privateKey, resultMessage in
             guard let privateKey = privateKey else {
-                completion(nil)
+                completion(resultMessage)
                 return
             }
             let cipherData=Data(base64Encoded: data)
@@ -40,7 +40,7 @@ class AESCryptoManager:BaseCryptoManagerImpl{
                 &error
             ) else {
                 print("Error decrypting data: \(error!.takeRetainedValue() as Error)")
-                completion(nil)
+                completion(resultMessage)
                 return
                }
             
