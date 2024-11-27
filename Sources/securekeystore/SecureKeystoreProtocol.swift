@@ -34,4 +34,11 @@ public protocol SecureKeystoreProtocol {
     func clearKeys(onSuccess: @escaping (Bool) -> Void, onFailure: @escaping(_ code: String, _ message: String) -> Void)
     
     func retrieveKey(tag: String, onSuccess: @escaping (String) -> Void, onFailure: @escaping(_ code: String,_ message: String)->Void)
+    
+    // iCloud Key-Value Storage Methods
+    func storeValueInCloud(key: String, value: String, onSuccess: @escaping (Bool) -> Void, onFailure: @escaping(_ code: String, _ message: String) -> Void)
+    
+    func retrieveValueFromCloud(key: String, onSuccess: @escaping (String?) -> Void, onFailure: @escaping(_ code: String, _ message: String) -> Void)
+    
+    func removeValueFromCloud(key: String, onSuccess: @escaping (Bool) -> Void, onFailure: @escaping(_ code: String, _ message: String) -> Void)
 }
