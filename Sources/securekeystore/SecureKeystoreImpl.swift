@@ -10,6 +10,7 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
     private let aesCryptoManager: AESCryptoManager
     private let aesKeyManager: AESKeyManager
     private let biometrics: BiometricsProtocol
+    private let iCloudStore = NSUbiquitousKeyValueStore.default
     
     public init() {
         self.biometrics=BiometricsImpl()
@@ -243,4 +244,34 @@ public class SecureKeystoreImpl:SecureKeystoreProtocol {
             }
         }
     }
+    
+    /// iCloud CRUD operations
+    public func storeValueInCloud(key: String, value: String, onSuccess: @escaping (Bool) -> Void, onFailure: @escaping (String, String) -> Void) {
+            iCloudStore.set(value, forKey: key)
+            if iCloudStore.synchronize() {
+                onSuccess(true)
+            } else {
+                onFailure("SYNC_FAILED", "Failed to synchronize iCloud Key-Value store.")
+            }
+        }
+        
+        
+        public func retrieveValueFromCloud(key: String, onSuccess: @escaping (String?) -> Void, onFailure: @escaping (String, String) -> Void) {
+            let value = iCloudStore.string(forKey: key)
+            if let value = value {
+                onSuccess(value)
+            } else {
+                onFailure("NOT_FOUND", "Key not found in iCloud Key-Value store.")
+            }
+        }
+        
+        
+        public func removeValueFromCloud(key: String, onSuccess: @escaping (Bool) -> Void, onFailure: @escaping (String, String) -> Void) {
+            iCloudStore.removeObject(forKey: key)
+            if iCloudStore.synchronize() {
+                onSuccess(true)
+            } else {
+                onFailure("SYNC_FAILED", "Failed to synchronize iCloud Key-Value store.")
+            }
+        }
 }
