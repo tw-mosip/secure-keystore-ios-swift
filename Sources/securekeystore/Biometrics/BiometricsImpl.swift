@@ -45,16 +45,24 @@ class BiometricsImpl: BiometricsProtocol {
         let context = LAContext()
         var error: NSError?
         
-        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
-            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authError in
+        if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
+            context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
                 DispatchQueue.main.async {
                     if success {
                         self.updateLastSuccessfulAuth(forKeyType: keyType)
                         self.isAuthenticating = false
                         completion(true, nil)
-                    } else if let authError = authError as! LAError?, authError.code == LAError.userFallback {
-                        // Biometry is locked out after several failed attempts, fallback to password
-                        self.fallbackToPassword(context: context, reason: reason, keyType: keyType, completion: completion)
+                    } else if let authError = authError as! LAError?, authError.code == LAError.passcodeNotSet {
+                        // Passcode not set for automation purposes
+                        if let enableAuth = Bundle.main.infoDictionary?["ENABLE_AUTH"] as? String, enableAuth == "true"{
+                            self.isAuthenticating = false
+                            completion(false, error)
+                        }
+                        else{
+                            self.updateLastSuccessfulAuth(forKeyType: keyType)
+                            self.isAuthenticating = false
+                            completion(true, nil)
+                        }
                     } else {
                         self.isAuthenticating = false
                         completion(false, authError)
@@ -62,19 +70,14 @@ class BiometricsImpl: BiometricsProtocol {
                 }
             }
         } else {
-            // Fallback to device password if biometrics are not available or disabled
-            fallbackToPassword(context: context, reason: reason, keyType: keyType, completion: completion)
-        }
-    }
-    
-    private func fallbackToPassword(context: LAContext, reason: String, keyType: String, completion: @escaping (Bool, Error?) -> Void) {
-        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
-            DispatchQueue.main.async {
-                if success {
-                    self.updateLastSuccessfulAuth(forKeyType: keyType)
-                }
+            if let enableAuth = Bundle.main.infoDictionary?["ENABLE_AUTH"] as? String, enableAuth == "true"{
                 self.isAuthenticating = false
-                completion(success, authError)
+                completion(false, error)
+            }
+            else{
+                self.updateLastSuccessfulAuth(forKeyType: keyType)
+                self.isAuthenticating = false
+                completion(true, nil)
             }
         }
     }
