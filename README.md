@@ -1,5 +1,18 @@
 # secure-keystore-ios-swift
-Swift library to create and store keys in ios keychain and secure key enclave. Also helps to do encryption, decryption, and data signing.
+Swift library to create and store keys in the iOS Keychain and Secure Enclave. Supports encryption, decryption, data signing, biometric authentication.
+
+## Features
+
+- **Asymmetric Key Pair Generation** — Generate RSA and EC (ECR1) key pairs stored securely in the iOS Keychain, with optional biometric/passcode authentication and configurable auth timeout.
+- **Symmetric Key Generation** — Generate AES keys for symmetric encryption and decryption using AES-GCM on the Secure Enclave.
+- **HMAC-SHA Key Generation & Signing** — Generate HMAC-SHA keys and produce HMAC-SHA signatures for data integrity verification (requires iOS 13.0+).
+- **Data Signing** — Sign arbitrary data using RSA (PKCS1v15 SHA-256) or ECR1 (ECDSA X962 SHA-1) algorithms.
+- **Encryption & Decryption** — Encrypt and decrypt data using EC curve keys (`.eciesEncryptionCofactorVariableIVX963SHA256AESGCM`, 256-bit).
+- **Generic Key Storage** — Store and retrieve arbitrary public/private key pairs in the Keychain under a named account.
+- **Key Retrieval & Deletion** — Retrieve stored public keys in PKCS8 format by tag, check for key existence by alias, and delete key pairs on demand.
+- **Bulk Key Clearing** — Remove all keys managed by the library from the Keychain in a single call.
+- **Biometric Authentication** — Check whether biometrics (Face ID / Touch ID) are enrolled and available on the device.
+- **Biometric Type Detection** — Identify the specific biometric type available — Face ID, Touch ID, or None.
 
 ## Installation
 
@@ -87,7 +100,19 @@ Checks if biometrics (Face ID/Touch ID) are enabled on the device.
 - **Returns:**
   - A Boolean indicating if biometrics are enabled.
 
-### 8. `updatePopup(title: String, desc: String)`  
+### 8. `getAvailableBiometricType() -> String`
+Returns the type of biometric authentication available on the device.
+
+- **Note:**
+  - On iOS 11.0+, the biometric type is determined using `LABiometryType` (Face ID or Touch ID). On earlier iOS versions, `LABiometryType` is unavailable, so the method falls back to checking biometric capability — returning `"FINGERPRINT"` if biometrics are enabled (Touch ID was the only option pre-iOS 11), or `"NONE"` if not.
+
+- **Returns:**
+  - A `String` indicating the available biometric type:
+    - `"FACE"` — Face ID is available.
+    - `"FINGERPRINT"` — Touch ID is available.
+    - `"NONE"` — No biometric authentication is available.
+
+### 9. `updatePopup(title: String, desc: String)`  
 Updates the title and description of the authentication popup.`static` method so sets for all biometric instances.
 
 - **Parameters:**
