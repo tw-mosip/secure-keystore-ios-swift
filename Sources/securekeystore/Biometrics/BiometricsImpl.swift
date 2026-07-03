@@ -96,28 +96,6 @@ class BiometricsImpl: BiometricsProtocol {
         case none = "NONE"
     }
     
-    func getAvailableBiometricType() -> String {
-        let context = LAContext()
-        var error: NSError?
-        
-        let canEvaluate = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
-        
-        if #available(iOS 11.0, *) {
-            switch context.biometryType {
-            case .faceID:
-                return AvailableBiometricType.face.rawValue
-            case .touchID:
-                return AvailableBiometricType.fingerprint.rawValue
-            case .none:
-                return AvailableBiometricType.none.rawValue
-            @unknown default:
-                return AvailableBiometricType.none.rawValue
-            }
-        } else {
-            return canEvaluate ? AvailableBiometricType.fingerprint.rawValue : AvailableBiometricType.none.rawValue
-        }
-    }
-    
     // Private method to check if authentication is required based on the key type and its timeout
     private func isAuthenticationRequired(forKeyType keyType: String) -> Bool {
         return authQueue.sync {

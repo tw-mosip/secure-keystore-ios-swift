@@ -17,8 +17,6 @@ public protocol SecureKeystoreProtocol {
     
     func hasBiometricsEnabled() -> Bool
     
-    func getAvailableBiometricType() -> String
-    
     func updatePopup(title: String, desc: String)
     
     func generateKey(alias: String, authRequired: Bool, authTimeout: Int32, onSuccess: @escaping (Bool) -> Void, onFailure: @escaping(_ code: String, _ message: String) -> Void)

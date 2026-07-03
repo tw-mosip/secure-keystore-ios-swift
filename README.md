@@ -100,19 +100,7 @@ Checks if biometrics (Face ID/Touch ID) are enabled on the device.
 - **Returns:**
   - A Boolean indicating if biometrics are enabled.
 
-### 8. `getAvailableBiometricType() -> String`
-Returns the type of biometric authentication available on the device.
-
-- **Note:**
-  - On iOS 11.0+, the biometric type is determined using `LABiometryType` (Face ID or Touch ID). On earlier iOS versions, `LABiometryType` is unavailable, so the method falls back to checking biometric capability — returning `"FINGERPRINT"` if biometrics are enabled (Touch ID was the only option pre-iOS 11), or `"NONE"` if not.
-
-- **Returns:**
-  - A `String` indicating the available biometric type:
-    - `"FACE"` — Face ID is available.
-    - `"FINGERPRINT"` — Touch ID is available.
-    - `"NONE"` — No biometric authentication is available.
-
-### 9. `updatePopup(title: String, desc: String)`  
+### 8. `updatePopup(title: String, desc: String)`  
 Updates the title and description of the authentication popup.`static` method so sets for all biometric instances.
 
 - **Parameters:**
